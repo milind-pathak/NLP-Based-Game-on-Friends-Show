@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Friends RPG</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #conversation {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+        #input-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        #input-area form {
+            display: flex;
+        }
+        #input-area input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #scene-selection {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="scene-selection">
+        <form id="scene-form">
+            <label for="scene">Choose a scene to start:</label>
+            <select id="scene" name="scene">
+                <option value="cafe">Central Perk</option>
+            </select>
+            <button type="submit">Start</button>
+        </form>
+    </div>
+    <div id="conversation"></div>
+    <div id="input-area" style="display: none;">
+        <form id="action-form">
+            <input type="text" name="action" placeholder="What does Chandler do?">
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).on('submit', '#scene-form', function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '/set_scene', // Make sure this route is defined in your Flask app
+                data: { scene: $('#scene').val() },
+                success: function(response) {
+                    $('#scene-selection').hide(); // Hide scene selection
+                    $('#input-area').show(); // Show the input area
+                    $('#conversation').append('<div><strong>Narrator:</strong> ' + response.description + '</div>');
+                }
+            });
+        });
+
+        $(document).on('submit', '#action-form', function(e) {
+            e.preventDefault();
+            const actionText = $('input[name="action"]').val();
+            $('#conversation').append('<div><strong>You:</strong> ' + actionText + '</div>');
+            $.ajax({
+                type: 'POST',
+                url: '/perform_action', // Make sure this route is defined in your Flask app
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.narration) {
+                        $('#conversation').append('<div><strong>Narrator:</strong> ' + response.narration + '</div>');
+                    }
+                    if (response.dialogue) {
+                        $('#conversation').append('<div><strong>Character:</strong> ' + response.dialogue + '</div>');
+                    }
+                    $('#conversation').scrollTop($('#conversation')[0].scrollHeight); // Auto-scroll to the latest entry
+                    $('input[name="action"]').val(''); // Clear the input field
+                }
+            });
+        });
+    </script>
+</body>
+</html>
